@@ -1,0 +1,44 @@
+name: "apt キャッシュインストール"
+description: "apt パッケージを actions/cache@v5 でキャッシュしてインストールする（Node.js 不使用）"
+
+inputs:
+  packages:
+    description: "インストールするパッケージ（スペース区切り）"
+    required: true
+  cache-version:
+    description: "キャッシュキーの手動バスト用バージョン"
+    default: "1"
+
+runs:
+  using: "composite"
+  steps:
+    - name: キャッシュを復元
+      id: cache
+      uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ~/.apt-debs
+        key: apt-${{ runner.arch }}-${{ runner.os }}-v${{ inputs.cache-version }}-${{ inputs.packages }}
+
+    # キャッシュミス時のみ: apt-get update → download → save
+    - name: パッケージをダウンロード
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        PACKAGES: ${{ inputs.packages }}
+      run: |
+        sudo apt-get update -qq
+        mkdir -p ~/.apt-debs
+        cd ~/.apt-debs
+        apt-get download $PACKAGES
+
+    - name: キャッシュを保存
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ~/.apt-debs
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+
+    # キャッシュヒット・ミス両方: dpkg でインストール
+    - name: パッケージをインストール
+      shell: bash
+      run: sudo dpkg --install --recursive --skip-same-version ~/.apt-debs
