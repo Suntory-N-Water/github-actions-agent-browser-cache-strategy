@@ -1,0 +1,58 @@
+name: 計測（最小パッケージ手動指定）
+
+permissions: {}
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  min-packages:
+    name: 最小パッケージ手動指定
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: agent-browser をインストール
+        run: npm install -g agent-browser
+
+      - name: agent-browser バージョンを取得
+        id: ab-version
+        run: echo "version=$(agent-browser --version)" >> "$GITHUB_OUTPUT"
+
+      - name: Chrome バイナリをキャッシュから復元
+        id: chrome-cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.agent-browser/browsers
+          key: ${{ runner.os }}-chrome-${{ steps.ab-version.outputs.version }}
+
+      # ベースラインCIのログで実際に新規インストールされたのはこの2パッケージのみ
+      # 残り33パッケージは ubuntu-latest に既にインストール済み
+      - name: 不足パッケージのみインストール
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            fonts-freefont-ttf \
+            fonts-noto-cjk
+
+      - name: Chrome をインストール（キャッシュミス時のみ実際にダウンロード）
+        if: steps.chrome-cache.outputs.cache-hit != 'true'
+        run: agent-browser install
+
+      - name: ブラウザ操作（open → snapshot → close）
+        run: |
+          agent-browser batch \
+            "open https://claude-code-log.com" \
+            "snapshot -i" \
+            "close"
