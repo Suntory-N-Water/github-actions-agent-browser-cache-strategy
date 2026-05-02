@@ -1,0 +1,37 @@
+name: ベースライン計測（キャッシュなし）
+
+permissions: {}
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  baseline:
+    name: キャッシュなし
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: agent-browser をインストール
+        run: npm install -g agent-browser
+
+      - name: Chrome とシステム依存をインストール
+        run: agent-browser install --with-deps
+
+      - name: ブラウザ操作（open → snapshot → close）
+        run: |
+          agent-browser batch \
+            "open https://claude-code-log.com" \
+            "snapshot -i" \
+            "close"
