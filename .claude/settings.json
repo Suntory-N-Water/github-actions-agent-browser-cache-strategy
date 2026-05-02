@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1",
+    "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"
+  },
+  "cleanupPeriodDays": 999,
+  "permissions": {
+    "allow": [
+      "mcp__context7",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(gh:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run view:*)",
+      "Bash(git log:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh search issues:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh api:*)",
+      "Bash(gh label list:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue comment:*)",
+      "Bash(gh release:*)",
+      "Bash(gh run rerun:*)",
+      "Bash(pinact run:*)",
+      "Bash(ghalint run:*)",
+      "Bash(actionlint:*)",
+      "Bash(zizmor:*)",
+      "Bash(agent-browser:*)",
+      "Bash(cat:*)",
+      "Bash(chmod:*)",
+      "Bash(find:*)",
+      "Bash(tree:*)",
+      "Bash(bun add:*)",
+      "Bash(bun remove:*)",
+      "Bash(bun install:*)",
+      "Bash(bun run:*)",
+      "Bash(bun knip:*)",
+      "WebFetch",
+      "WebSearch",
+      "Bash(wc:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "Read(.env)",
+      "Bash(.env)",
+      "Read(.dev.vars)",
+      "Bash(.dev.vars)",
+      "Write(.env*)",
+      "Write(.dev.vars)",
+      "NotebookEdit"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(rm:*)",
+      "Bash(curl:*)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run --silent -i ~/.claude/scripts/typescript/fix-brackets.ts",
+            "statusMessage": "ブラケット修正中..."
+          },
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Glass.aiff",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "WebFetch|Fetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run --silent -i ~/.claude/scripts/typescript/web-fetch-advice.ts"
+          }
+        ]
+      }
+    ]
+  },
+  "plansDirectory": ".claude/plans",
+  "autoMemoryEnabled": false
+}
