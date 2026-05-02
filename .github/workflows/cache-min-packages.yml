@@ -1,4 +1,4 @@
-name: 計測（最小パッケージ手動指定）
+name: 計測(最小パッケージ手動指定)
 
 permissions: {}
 
@@ -46,11 +46,11 @@ jobs:
             fonts-freefont-ttf \
             fonts-noto-cjk
 
-      - name: Chrome をインストール（キャッシュミス時のみ実際にダウンロード）
+      - name: Chrome をインストール(キャッシュミス時のみ実際にダウンロード)
         if: steps.chrome-cache.outputs.cache-hit != 'true'
         run: agent-browser install
 
-      - name: ブラウザ操作（open → snapshot → close）
+      - name: ブラウザ操作(open → snapshot → close)
         run: |
           agent-browser batch \
             "open https://claude-code-log.com" \

@@ -1,9 +1,9 @@
 name: "apt キャッシュインストール"
-description: "apt パッケージを actions/cache@v5 でキャッシュしてインストールする（Node.js 不使用）"
+description: "apt パッケージを actions/cache@v5 でキャッシュしてインストールする(Node.js 不使用)"
 
 inputs:
   packages:
-    description: "インストールするパッケージ（スペース区切り）"
+    description: "インストールするパッケージ(スペース区切り)"
     required: true
   cache-version:
     description: "キャッシュキーの手動バスト用バージョン"

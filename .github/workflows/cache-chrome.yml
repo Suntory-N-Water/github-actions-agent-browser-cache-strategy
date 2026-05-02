@@ -1,4 +1,4 @@
-name: 計測（Chrome バイナリキャッシュ）
+name: 計測(Chrome バイナリキャッシュ)
 
 permissions: {}
 
@@ -40,7 +40,7 @@ jobs:
       - name: Chrome とシステム依存をインストール
         run: agent-browser install --with-deps
 
-      - name: ブラウザ操作（open → snapshot → close）
+      - name: ブラウザ操作(open → snapshot → close)
         run: |
           agent-browser batch \
             "open https://claude-code-log.com" \
