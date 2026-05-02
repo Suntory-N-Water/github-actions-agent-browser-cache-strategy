@@ -4,4 +4,5 @@
 - 調査しても根拠が得られない場合は「わからない」と明示する
 - GitHub の情報取得には `gh` コマンドを使用する
 - ライブラリの仕様は Context7 MCP サーバーを使用する
-- GitHub Actions 関連ファイルを変更後は `/actions-check` で静的解析を実施する
+- GitHub Actions 関連ファイルを変更後は `ghasec` で静的解析を実施する
+- GitHub Actions 関連ファイルのバージョンは最新版を確認後、バージョンを SHA で pin 固定する

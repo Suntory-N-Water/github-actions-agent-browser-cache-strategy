@@ -42,7 +42,12 @@
       "WebFetch",
       "WebSearch",
       "Bash(wc:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)"
     ],
     "deny": [
       "Bash(rm -rf:*)",
@@ -56,11 +61,6 @@
       "NotebookEdit"
     ],
     "ask": [
-      "Bash(git push:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git checkout:*)",
-      "Bash(git switch:*)",
       "Bash(rm:*)",
       "Bash(curl:*)"
     ]
