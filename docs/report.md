@@ -17,6 +17,7 @@ GitHub Actions 上で [agent-browser](https://github.com/vercel-labs/agent-brows
 | Chrome | Chrome for Testing 148.0.7778.97(175MB) |
 | 検証サイト | https://claude-code-log.com |
 | 操作内容 | `open` → `snapshot -i` → `close` |
+| 計測方法 | 各アプローチを複数回(4〜9回)実行し範囲を記録。実行履歴: [ベースライン](https://github.com/Suntory-N-Water/github-actions-agent-browser-cache-strategy/actions/workflows/baseline.yml) / [Chrome キャッシュ](https://github.com/Suntory-N-Water/github-actions-agent-browser-cache-strategy/actions/workflows/cache-chrome.yml) / [最小パッケージ](https://github.com/Suntory-N-Water/github-actions-agent-browser-cache-strategy/actions/workflows/cache-min-packages.yml) / [awalsh128](https://github.com/Suntory-N-Water/github-actions-agent-browser-cache-strategy/actions/workflows/cache-apt-packages.yml) / [gerlero](https://github.com/Suntory-N-Water/github-actions-agent-browser-cache-strategy/actions/workflows/cache-apt-gerlero.yml) / [自前実装](https://github.com/Suntory-N-Water/github-actions-agent-browser-cache-strategy/actions/workflows/cache-apt-custom.yml) |
 
 ## ベースライン計測
 
@@ -88,18 +89,32 @@ The following NEW packages will be installed:
 
 #### 結果と考察
 
-キャッシュヒット時のログに `✓ Chrome 148.0.7778.97 is already installed` が確認でき、Chrome ダウンロードはスキップされた。しかし `apt-get update` + システム依存インストールは毎回実行されるため、大幅な短縮にはならなかった。
+キャッシュヒット時のログ([run #25240220690](https://github.com/Suntory-N-Water/github-actions-agent-browser-cache-strategy/actions/runs/25240220690))に `✓ Chrome 148.0.7778.97 is already installed` が確認でき、Chrome ダウンロードはスキップされた。しかし `apt-get update` + システム依存インストールは毎回実行されるため、大幅な短縮にはならなかった。
 
-| | ベースライン | キャッシュヒット |
+| | ベースライン | キャッシュヒット(4回計測) |
 |---|---|---|
-| インストールステップ | 33秒 | 27秒 |
-| 合計 | 43秒 | 35秒 |
+| 合計 | 36〜45秒 | 36〜46秒 |
 
 ### 最小パッケージの手動指定
 
 #### 調査：`--with-deps` は何をインストールしているか
 
-ベースライン CI のログを解析し、`apt-get install` コマンドの実行結果を確認した。結果、ubuntu-latest には Chromium の依存の大半が既にインストール済みであり、実際に必要なのは `fonts-freefont-ttf` と `fonts-noto-cjk` の2パッケージのみと判明。
+ベースライン CI のログ([run #25240037766](https://github.com/Suntory-N-Water/github-actions-agent-browser-cache-strategy/actions/runs/25240037766))を解析し、`apt-get install` の実行結果を確認した。
+
+```
+fonts-noto-color-emoji is already the newest version (2.047-0ubuntu0.24.04.1).
+...(他33パッケージも同様に already the newest version)
+The following NEW packages will be installed:
+  fonts-freefont-ttf fonts-noto-cjk
+0 upgraded, 2 newly installed, 0 to remove and 53 not upgraded.
+Need to get 66.9 MB of archives.
+After this operation, 108 MB of additional disk space will be used.
+Get:2 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 fonts-freefont-ttf all 20211204+svn4273-2 [5641 kB]
+Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 fonts-noto-cjk all 1:20230817+repack1-3 [61.2 MB]
+Fetched 66.9 MB in 1s (51.6 MB/s)
+```
+
+ubuntu-latest には Chromium の依存の大半が既にインストール済みであり、実際に必要なのは `fonts-freefont-ttf` と `fonts-noto-cjk` の2パッケージのみと判明。
 
 この知見をもとに `agent-browser install --with-deps` を使わず、不足する2パッケージだけを直接指定する方式に切り替えた。
 
@@ -107,12 +122,11 @@ The following NEW packages will be installed:
 
 #### 結果と考察
 
-`apt-get update` は引き続き実行されるため、削減効果は限定的だった。フォント2パッケージに絞ってもダウンロードとインストールで20秒かかる。
+`apt-get update` は引き続き実行されるため、削減効果は限定的だった。フォント2パッケージに絞ってもダウンロードとインストールで約20秒かかる。Chrome キャッシュの有無で変わらず、毎回ほぼ同じ時間がかかる。
 
-| | ベースライン | キャッシュヒット |
+| | ベースライン | 実測範囲(5回計測) |
 |---|---|---|
-| インストールステップ | 33秒 | 20秒 |
-| 合計 | 43秒 | 34秒 |
+| 合計 | 36〜45秒 | 24〜30秒 |
 
 ### apt パッケージキャッシュ
 
@@ -143,26 +157,26 @@ Node.js を一切使わない composite + Bash 実装で、`actions/cache@v5`(No
 
 #### 結果と考察
 
-| 実装 | ヒット時インストール | 合計 | Node.js 問題 |
+| 実装 | 実測範囲(4回計測) | Node.js 問題 | 備考 |
 |---|---|---|---|
-| awalsh128 | 4秒 | 16秒 | ⚠️ node20 廃止予定 |
-| gerlero | 20秒 | 36秒 | なし |
-| **自前実装** | **6秒** | **19秒** | **なし** |
+| awalsh128 | 13〜19秒 | ⚠️ node20 廃止予定 | - |
+| gerlero | 24〜36秒 | なし | ヒット時も apt-get update が走るため遅い |
+| **自前実装** | **16〜19秒** | **なし** | - |
 
-自前実装がキャッシュヒット時に最速かつ Node.js 廃止問題もなく、最もバランスが良い結果となった。
+速度は awalsh128(13〜19秒)と自前実装(16〜19秒)がほぼ同等。awalsh128 は Node.js 20 廃止問題を抱えているため、同等の速度を保ちつつ廃止リスクがない自前実装が最もバランスが良い結果となった。
 
 ## 計測結果まとめ
 
-全アプローチのキャッシュヒット時の比較。
+2回目以降(キャッシュ温まり後)の実測範囲。各アプローチ4〜9回実行。
 
-| アプローチ | 合計 | インストールステップ | 対ベースライン |
+| アプローチ | キャッシュ状態 | 実測範囲 | 備考 |
 |---|---|---|---|
-| ① ベースライン(キャッシュなし) | 43秒 | 33秒 | - |
-| ② Chrome のみキャッシュ | 35秒 | 27秒 | -19% |
-| ③ 最小パッケージ手動指定 | 34秒 | 20秒 | -21% |
-| ④ awalsh128 apt キャッシュ | 16秒 | 4秒 | -63% |
-| ⑤ gerlero apt キャッシュ | 36秒 | 20秒 | -16% |
-| ⑥ **自前実装 apt キャッシュ** | **19秒** | **6秒** | **-56%** |
+| ① ベースライン | キャッシュなし(毎回) | 36〜45秒 | - |
+| ② Chrome のみ | Chrome ヒット・apt 毎回 | 36〜46秒 | ほぼ改善なし |
+| ③ 最小パッケージ | Chrome ヒット・apt 毎回 | 24〜30秒 | - |
+| ④ awalsh128 | Chrome + apt ヒット | 13〜19秒 | ⚠️ node20 廃止予定 |
+| ⑤ gerlero | Chrome + apt ヒット | 24〜36秒 | ヒット時も apt-get update が走る |
+| ⑥ **自前実装** | **Chrome + apt ヒット** | **16〜19秒** | **node.js 不使用** |
 
 ## 結論と注意点
 
@@ -171,7 +185,7 @@ Node.js を一切使わない composite + Bash 実装で、`actions/cache@v5`(No
 **自前実装の apt キャッシュ(アプローチ⑥)を採用する。**
 
 理由：
-- キャッシュヒット時にベースライン比 56% 削減(43秒 → 19秒)
+- キャッシュヒット時にベースライン比 50〜60% 削減(36〜45秒 → 16〜19秒)
 - `actions/cache@v5`(Node.js 24)のみを使用しており廃止リスクがない
 - 外部アクションへの依存なし・composite action 約40行のシンプルな実装
 - キャッシュキーに手動バスト用バージョン番号を持ち、緊急時のリセットが容易
