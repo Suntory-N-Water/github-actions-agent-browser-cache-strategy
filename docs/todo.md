@@ -42,3 +42,4 @@ GitHub Actions 上で agent-browser を使う際のキャッシュ戦略（CI高
 - agent-browser は Rust 製ネイティブバイナリ。Chrome は Chrome for Testing を別途ダウンロードする仕組み
 - システム依存（apt パッケージ）はバイナリと違いキャッシュが難しい可能性あり
 
+
