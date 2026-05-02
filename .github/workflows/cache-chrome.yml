@@ -1,0 +1,48 @@
+name: 計測（Chrome バイナリキャッシュ）
+
+permissions: {}
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chrome-cache:
+    name: Chrome バイナリキャッシュあり
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: agent-browser をインストール
+        run: npm install -g agent-browser
+
+      - name: agent-browser バージョンを取得
+        id: ab-version
+        run: echo "version=$(agent-browser --version)" >> "$GITHUB_OUTPUT"
+
+      - name: Chrome バイナリをキャッシュから復元
+        id: chrome-cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.agent-browser/browsers
+          key: ${{ runner.os }}-chrome-${{ steps.ab-version.outputs.version }}
+
+      - name: Chrome とシステム依存をインストール
+        run: agent-browser install --with-deps
+
+      - name: ブラウザ操作（open → snapshot → close）
+        run: |
+          agent-browser batch \
+            "open https://claude-code-log.com" \
+            "snapshot -i" \
+            "close"
